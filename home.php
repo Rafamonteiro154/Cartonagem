@@ -1,8 +1,31 @@
 <!DOCTYPE html>
+<!--Admin123. -->
 <meta charset="utf-8">
-<html >
+<html>
   <head>
-  
+  <style>
+    .rotate {
+  /* FF3.5+ */
+  -moz-transform: rotate(-90.0deg);
+  /* Opera 10.5 */
+  -o-transform: rotate(-90.0deg);
+  /* Saf3.1+, Chrome */
+  -webkit-transform: rotate(-90.0deg);
+  /* IE6,IE7 */
+  filter: progid: DXImageTransform.Microsoft.BasicImage(rotation=0.083);
+  /* IE8 */
+  -ms-filter: "progid:DXImageTransform.Microsoft.BasicImage(rotation=0.083)";
+  /* Standard */
+  transform: rotate(-90.0deg);
+}
+#fullscreen-img {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    </style>
   </head>
 <link rel="stylesheet" type="text/css" href="css/sensors.css">
 <link rel="stylesheet" href="css/bootstrap.min.css">
@@ -62,10 +85,20 @@ body{
   
 }
 
-
+footer {
+    position: absolute;
+    bottom: 0;
+    color: black;
+    width: 100%;
+    height: 40px;    
+    text-align: right;
+    line-height: 50px;
+    top:1290px;
+    left:50px;
+}
 </style>
 
-<body>
+<body class="container-fluid">
 
 <?php
 
@@ -86,8 +119,8 @@ body{
 
               <div class="Wrapper" style="display: inline-block; float: left; width: 85%; margin-top: 0px; overflow:auto ;">
 
-                <div id='heatMap'  style=" width: 100%; min-height: 552px; height: 66vh;  padding: 0px;  margin: 0 auto; display: block;">
-                <img  id="planta" src='images/plantaV2.png' max-width="100%" height="auto" />
+                <div id='heatMap1'  style=" width: 100%; min-height: 552px; height: 66vh;  padding: 0px;  margin: 0 auto; display: block;">
+                <img  id="planta" src='images/plantaV2.png' width="1274" height="653" />
                 <canvas id="canvasHeat" width="1290"  style="position:absolute; left: 0; top: 0">
                 </canvas> 
               </div>
@@ -96,7 +129,7 @@ body{
             </div>
 
 
-            <div style="display: inline-block; float: left; width: 15%; height: 100%;  display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; ">
+            <div style="display: inline-block; float: left; width: 15 %; height: 100%;  display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; ">
              <div id='GradTemperature' style="width: 150px; height: 600px; margin-top: 10%; margin-bottom: -10%">
             </div>
 
@@ -108,10 +141,10 @@ body{
 
     <div class="row dashboard-rows"  style="height: 23vh; ">
       <div class="col-md-12 pr-md-1">
-        <div class="graph-containers" >
-          <div style="display: inline-block; float: left; width: 3%;"><br></div>
-            <div style="display: inline-block; float: left; width: 22%; margin-top: 8px; margin-bottom: 8px;">
-              <div style="margin: 0 auto; text-align: center; width:40vh; overflow:auto ; height: 260px;">
+        <div class="graph-containers" style="height: 450px;">
+          <div style="display: inline-block; float: left; width: 3%; height:0px"><br></div>
+            <div style="display: inline-block; float: left; width: 22%; margin-top: 8px; margin-bottom: 8px">
+              <div style="margin: 0 auto; text-align: center; width:40vh; overflow:auto ; height: 60%;">
 
                <?php  
                require 'php/connect.php';
@@ -130,36 +163,62 @@ body{
                 $total = mysqli_fetch_array($result);
                 
                 $total= substr(implode($total),-2);
-              
-                
-                ?>
-                <table width='100%'>
-                  <tr>
-                    <td valign="top" ><?php 
-                    $sql = "SELECT distinct id_sensor FROM `location` where status = 1 order by id_sensor limit ".round($total/3).";";  
-                    $result = $mysqli->query($sql);
-                    while($row = mysqli_fetch_array($result)){
-                      echo '<button style="margin-bottom: 10px;" class="btn btn-md btn-secondary btn-block buttonSensor" onClick="SeeSensor(this.id)" id='. $row["id_sensor"].'  >Nó '. $row["id_sensor"].'</button>';
-                    }
-                    
-                    ?></td>
-                    <td valign="top" ><?php
-                    $sql = "SELECT distinct id_sensor FROM `location` where status = 1 order by id_sensor limit ".round($total/3)." offset ".round($total/3).";";  
-                    $result = $mysqli->query($sql);
-                    while($row = mysqli_fetch_array($result)){
-                      echo '<button style="margin-bottom: 10px;" class="btn btn-md btn-secondary btn-block buttonSensor" onClick="SeeSensor(this.id)" id='. $row["id_sensor"].'  >Nó '. $row["id_sensor"].'</button>';
-                    }
-                    ?></td>
-                    
-                    <td valign="top" ><?php
-                    $sql = "SELECT distinct id_sensor FROM `location` where status = 1 order by id_sensor limit 100 offset ".(round($total/3)*2).";";  
-                    $result = $mysqli->query($sql);
-                    while($row = mysqli_fetch_array($result)){ 
-                      echo '<button style="margin-bottom: 10px;" class="btn btn-md btn-secondary btn-block buttonSensor" onClick="SeeSensor(this.id)" id='. $row["id_sensor"].'  >Nó '. $row["id_sensor"].'</button>';
-                    }
-                    ?></td>
-                  </tr>
-                </table>
+
+              // Definição do número de registros por página
+                $registros_por_pagina = 8;
+
+                // Definição da página atual
+                $pagina_atual = isset($_GET['pagina']) ? $_GET['pagina'] : 1;
+
+                // Cálculo do offset
+                $offset = ($pagina_atual - 1) * $registros_por_pagina;
+
+                // Consulta ao banco de dados com LIMIT e OFFSET
+                $sql = "SELECT id_sensor, RIGHT(id_sensor,2) as valor_dec FROM location WHERE status = 1 LIMIT $registros_por_pagina OFFSET $offset";
+                $resultado = $mysqli->query($sql);
+
+                // Contagem do total de registros da tabela
+                $total_registros = $mysqli->query("SELECT count(*) as total FROM location WHERE status = 1")->fetch_assoc()['total'];
+
+                // Cálculo do total de páginas
+                $total_paginas = ceil($total_registros / $registros_por_pagina);
+?>
+              <!-- Tabela com os botões dos sensores -->
+              <table width='100%' style="overflow:auto; max-height:500px;">
+  <tr>
+    <td style="width:2px; vertical-align: top;  padding-top:120px;">
+      <button disabled style="margin-bottom: 500px; height: 65px; width: 49px; padding-right: 8px; border-right-width: 0px;" class="btn btn-secondary d-flex flex-column justify-content-center"><span class="rotate">No</span></button>
+    </td>
+    <td valign="top" style="width:2px; padding-top:120px;">
+      <?php
+        while ($row = mysqli_fetch_array($resultado)) {
+          echo '<div style="display: inline-block; width: 50%;"><button style="margin-bottom: 10px; width:73px;" class="btn btn-md btn-secondary btn-sm btn-block buttonSensor" onClick="SeeSensor(this.id)" id="' . $row["id_sensor"] . '"> ' . $row["valor_dec"] . '</button></div>';
+        }
+      ?>
+      <div style="text-align: center;">
+        <!-- Paginação -->
+        <nav aria-label="Page navigation example">
+          <ul class="pagination" style="margin-left: 35px;">
+            <?php
+              // Botão "Anterior"
+              echo "<li class='page-item" . ($pagina_atual == 1 ? " disabled" : "") . "'><a class='page-link' href='?pagina=" . ($pagina_atual - 1) . "'>&laquo;</a></li>";
+
+              // Links das páginas
+              for ($i = 1; $i <= $total_paginas; $i++) {
+                echo "<li class='page-item" . ($pagina_atual == $i ? " active" : "") . "'><a class='page-link' href='?pagina=$i'>$i</a></li>";
+              }
+
+              // Botão "Próximo"
+              echo "<li class='page-item" . ($pagina_atual == $total_paginas ? " disabled" : "") . "'><a class='page-link' href='?pagina=" . ($pagina_atual + 1) . "'>&raquo;</a></li>";
+            ?>
+          </ul>
+        </nav>
+      </div>
+    </td>
+  </tr>
+</table>
+
+
                 <?php
                 //echo '<button class="btn btn-md btn-secondary btn-block buttonSensor" onClick="SeeSensor(this.id)" id='. $row["id_sensor"].'  >Nó '. $row["id_sensor"].'</button>';
 
@@ -167,6 +226,8 @@ body{
 
               </div>
             </div>
+
+            
             <div style="display: inline-block; float: left; width: 3%;"><br></div>
 
             <!-- aqui fica o grafico -->
@@ -174,34 +235,33 @@ body{
           
               <div style="margin: 0 auto; text-align: center; width: 80%; margin-top: 5px; margin-bottom: 0px;">
 
-              <button type="button" class="btn btn-secondary typeButton" onClick="SeeMeasure('temperature');" id="temperature" style="width: 150px; padding: 0.3px;" >Temperatura</button>
-              <button type="button" class="btn btn-secondary typeButton" onClick="SeeMeasure('humidity');" id="humidity"style="width: 150px; padding: 0.3px;">Humidade</button>
-              <button type="button" class="btn btn-secondary typeButton" onClick="SeeMeasure('pressure');" id="pressure" style="width: 150px; padding: 0.3px;">Pressão</button>
-              <button type="button" class="btn btn-secondary typeButton" onClick="SeeMeasure('co2');" id="co2"style="width: 150px; padding: 0.3px;">CO2</button>
-              <button type="button" class="btn btn-secondary typeButton" onClick="SeeMeasure('tvoc');" id="tvoc" style="width: 150px; padding: 0.3px;">TVOC</button>
-                
-
+              <button type="button" class="btn btn-secondary typeButton" onClick="SeeMeasure('temperature');" id="temperature" style="width: 10%; padding: 0.3px;" >Temp</button>
+              <button type="button" class="btn btn-secondary typeButton" onClick="SeeMeasure('humidity');" id="humidity"style="width: 10%; padding: 0.3px;">Hum</button>
+              <button type="button" class="btn btn-secondary typeButton" onClick="SeeMeasure('pressure');" id="pressure" style="width: 10%; padding: 0.3px;">Pres</button>
+              <button type="button" class="btn btn-secondary typeButton" onClick="SeeMeasure('co2');" id="co2"style="width: 10%; padding: 0.3px;">CO2</button>
+              <button type="button" class="btn btn-secondary typeButton" onClick="SeeMeasure('tvoc');" id="tvoc" style="width: 10%; padding: 0.3px;">TVOC</button>
             </div>  
-
             <div class="contentor">
-              <canvas id='ChartLine'> {{ chart }}></canvas>
-            </div>
-            <!--style="max-height: 35vh; margin-left: 20px"-->
-          </div>
+              <canvas id='ChartLine'style="margin-top:100px;"> {{ chart }}></canvas>
+            <!--</div>
+            style="max-height: 35vh; margin-left: 20px"
+          </div>-->
         </div>  
         
       </div>
-
-
-
     </div>
   </div>
 </div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
 </body>
+<footer>
+Versão:1.0(24/05/2023)
+</footer>
 <style>
   #ChartLine{
     height: 250px;
+  
   }
 @media screen and (max-width: 1300px){
   .contentor{
@@ -220,6 +280,32 @@ body{
 
 <script> 
  
+
+ var heatmapInstance = h337.create({
+  container: document.getElementById('heatMap1')
+
+});
+$.ajax({
+  url: 'php/getsensordata.php',
+  dataType: 'json',
+  Type:'GET',
+  success: function(data1) {
+    // Define um valor fixo de 30 para o campo "radius" de todos os sensores
+    for (var i = 0; i < data1.data.length; i++) {
+      heatmapInstance.addData({
+        x:data1.data[i].x,
+        y:data1.data[i].y,
+        value:data1.data[i].value,
+        radius:20,
+      })
+    }
+    console.log(data1);
+  },
+  error: function() {
+    alert('Erro ao carregar dados dos sensores.');
+  }
+});
+
 
   document.addEventListener("DOMContentLoaded", function(event) { 
     document.getElementById("0101").click();
@@ -313,18 +399,11 @@ body{
       });
 
       //rececao de dados heatmap
-    socket.on('dbTemp', function(db){
-    console.log('Dados recebidos!', db);
-
-    testData.data = [];
-
-    db.forEach(sensor => {
-      testData.data.push({x: sensor.location_x, y: sensor.location_y, value: sensor.temperature,  radius: 80});
-    });
+    
 
     //heatmapInstance.setData(testData);
         //UpdateGraph();
-      });
+  
 
     function SeeMeasure(measure){
 
@@ -450,33 +529,7 @@ body{
 
 
 
-///criacao do heatmap
 
-var heatmapInstance = h337.create({
-  container: document.getElementById('heatMap')
-});
-
-
-
-var testData = {
-  min: 0,
-  max: 35,
-  
-  
-  data: [
-        {x:location.location_x, y: 400, value: 3.5,  radius:80, text: 101}, //sensor 1
-        {x:location.location_x, y:location.location_y, value: 7,  radius:80}, //sensor 2
-        {x: 1050, y: 270, value: 10.5,  radius:80}, //sensor 3
-        {x: 940, y: 270, value: 14,  radius:80}, //sensor 4
-        {x: 840, y: 300, value: 17.5,  radius:80}, //sensor 5
-        {x: 710, y: 320, value: 21,  radius:80}, //sensor 6
-        {x: 480, y: 310, value: 24.5,  radius:100}, //sensor 7
-        {x: 290, y: 300, value: 28,  radius:100}, //sensor 8
-        {x: 610, y: 390, value: 31.5,  radius:100} //sensor 9
-        ]
-      };
-      heatmapInstance.setData(testData);
-      
       
       
 ///////////////////////////////
